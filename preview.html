@@ -1,0 +1,214 @@
+<meta charset="utf-8">
+<h1>xroads-game</h1>
+
+<p>I have always been addicted to these:</p>
+
+<p><img src="pics/lego-plate-1.png" alt="Lego-plate" /></p>
+
+<p>So let&rsquo;s paint some roads using the Haskell programming language.</p>
+
+<h2>Red Dots</h2>
+
+<p>A point is represented by the data type <code>Point</code>. We create a list of some example points.</p>
+
+<pre><code>data Point = Point Double Double
+points = [Point 200 100, Point 100 300, Point 300 200]
+</code></pre>
+
+<p>We fill the canvas by white and draw each point by the functions <code>drawMarkerAt</code> and <code>drawOneMarker</code>.</p>
+
+<pre><code>drawOneMarker bw (r,g,b) = do
+  rectangle (-0.5*bw) (-0.5*bw) bw bw
+  setSourceRGBA r g b 0.8
+  fill
+
+drawMarkerAt (Point x y) = do
+  save
+  translate x y
+  drawOneMarker 20.0 red
+  restore
+
+paintCanvas = do
+  setSourceRGB 1 1 1
+  paint
+  mapM_ drawMarkerAt points
+</code></pre>
+
+<p>The result is an image surface of size 400x400px, which we write to a file.</p>
+
+<pre><code>createPng fileName = do
+  let w = 400
+      h = 400
+  img &lt;- createImageSurface FormatARGB32 w h
+  renderWith img paintCanvas
+  surfaceWriteToPNG img fileName
+</code></pre>
+
+<p>The full code for the red dots is here: <a href="code/red-dots.hs">red-dots.hs</a></p>
+
+<p><img src="pics/red-dots.png" alt="red-dots" /></p>
+
+<h2>Orange Lines</h2>
+
+<p>To connect the points, we define the data type for vector. The colors are represented as RGB or RGBA color.</p>
+
+<pre><code>data Vector = Vector Double Double
+data RGBA = RGB  Double Double Double
+          | RGBA Double Double Double Double
+</code></pre>
+
+<p>The colors now become</p>
+
+<pre><code>white  = RGBA 1.00 1.00 1.00 1.00
+red    = RGB  0.88 0.29 0.22
+orange = RGB  0.98 0.63 0.15
+yellow = RGB  0.97 0.85 0.39
+green  = RGB  0.38 0.74 0.43
+darkGreen = RGB 0.00 0.66 0.52
+</code></pre>
+
+<p>We get the line segments and corresponding vectors by</p>
+
+<pre><code>mkVector (Point x0 y0) (Point x1 y1) =
+  Vector (x1 - x0) (y1 - y0)
+
+points = [Point 200 100, Point 100 300, Point 300 200]
+segments = zip points (tail (cycle points))
+vectors = map (uncurry mkVector) segments
+</code></pre>
+
+<p>The function <code>uncurry</code> from Prelude is used to unzip the tuple made by <code>zip</code>. To draw one vector, we use</p>
+
+<pre><code>drawVector (Point x y) (Vector dx dy) = do
+  setColor orange
+  moveTo x y
+  relLineTo dx dy
+  stroke
+</code></pre>
+
+<p>Again, we clear the canvas and paint the markers and vectors connecting them.</p>
+
+<pre><code>paintCanvas = do
+  setSourceRGB 1 1 1
+  paint
+  mapM_ drawMarkerAt points
+  mapM_ (uncurry drawVector) (zip points vectors)
+</code></pre>
+
+<p>The full code for the orange lines: <a href="code/orange-lines.hs">orange-lines.hs</a></p>
+
+<p><img src="pics/orange-lines.png" alt="orange-lines" /></p>
+
+<h2>Yellow Normals</h2>
+
+<p>Next we find out the normals for each start- and endpoint. When the points are ordered counterclockwise, we get the outside pointing normal for a vector by</p>
+
+<pre><code>normal (Vector dx dy) = 
+  Vector (-dy) dx
+</code></pre>
+
+<p>We need the magnitude of the vector, so we can draw a multitude of it&rsquo;s unit vector.</p>
+
+<pre><code>dist (Point x0 y0) (Point x1 y1) = 
+  sqrt ((sqr dx) + (sqr dy))
+  where
+    sqr x = x * x
+    dx = x1 - x0
+    dy = y1 - y0
+
+magnitude (Vector dx dy) =
+  dist (Point 0 0) (Point dx dy)
+
+unit r (Vector dx dy) = 
+  Vector (r * dx / mag) (r * dy / mag)
+  where
+    mag = magnitude (Vector dx dy)
+</code></pre>
+
+<p>Besides points and segments, we now get the startpoints, endpoints, vectors between them and the unit normals:</p>
+
+<pre><code>points = [Point 200 100, Point 100 300, Point 300 200]
+segments = zip points (tail (cycle points))
+startPoints = map fst segments
+endPoints = map snd segments
+vectors = map (uncurry mkVector) segments
+normals = map normal vectors
+units = map (unit 1.0) normals
+</code></pre>
+
+<p>We stroke the normals in a loop</p>
+
+<pre><code>paintCanvas = do
+  setSourceRGB 1 1 1
+  paint
+  mapM_ drawMarkerAt points
+  mapM_ (uncurry (drawVector orange)) (zip points vectors)
+  mapM_ (uncurry (drawVector yellow)) (zip startPoints units)
+  mapM_ (uncurry (drawVector yellow)) (zip endPoints units)
+</code></pre>
+
+<p>The full code for the normals: <a href="code/yellow-normals.hs">yellow-normals.hs</a></p>
+
+<p><img src="pics/yellow-normals.png" alt="yellow-normals" /></p>
+
+<h2>Green Roads</h2>
+
+<p>The roadline is drawn using functions <code>drawLine</code> and <code>drawArc</code>. Function <code>drawLine</code> is used on straight paths and function <code>drawArc</code> on curves.</p>
+
+<pre><code>paintRoadLine r = do
+  mapM_ (uncurry (drawLine green)) (zip rStart rEnd)
+  mapM_ (uncurry3 (drawArc green r)) arcs2
+  where
+    rVec = map (unit r) normals
+    rStart = map (uncurry toPoint) (zip startPoints rVec)
+    rEnd = map (uncurry toPoint) (zip endPoints rVec)
+</code></pre>
+
+<p>We take some measurements from the Lego-plates</p>
+
+<pre><code>plateW = 100
+roadMarks = [0.286, 0.307, 0.491]
+r1 = plateW * roadMarks !! 0
+r2 = plateW - r1
+</code></pre>
+
+<p>For an arc we need its center point, radius, start angle and end angle</p>
+
+<pre><code>drawArc color r (Point x y) angle1 angle2 = do
+  setColor color
+  arc x y r angle1 angle2
+  stroke
+</code></pre>
+
+<p>To get the calculations correct, we use <code>testPolygon</code> and <code>testDodecagon</code> as shape. For clarity the number <code>tau = 6.28318530717958647692</code> is used instead of <code>pi</code>.</p>
+
+<pre><code>testPolygon = [Point 200 100, Point 100 200, Point 100 300, Point 300 200]
+testDodecagon = 
+  [Point (200 + radius * cos a)(200 - radius * sin a)| a &lt;- angles]
+  where
+   radius = 100
+   corners = 12
+   angles = [i * (tau/corners) | i &lt;- [0..corners-1]]
+</code></pre>
+
+<p><img src="pics/green-roads-dodecagon.png" alt="green-dodecagon-polygon" /></p>
+
+<p>Given the vector, vectorangle can be calculated as follows:</p>
+
+<pre><code>vectorAngle (Vector x y) 
+  | y &gt;= 0   = acos x
+  | otherwise = -(acos x)
+</code></pre>
+
+<p>This is used to get the start angle and end angle of the arc. The function <code>drawArc</code> takes the center point, start angle and end angle as parameters. We have zipped them to a triple by the function <code>zip3</code> so we need the function <code>uncurry3</code> to unzip the parameters.</p>
+
+<pre><code>uncurry3 f (a,b,c) = f a b c
+</code></pre>
+
+<p>The full code for the green roads: <a href="code/green-roads.hs">green-roads.hs</a></p>
+
+<p><img src="pics/green-roads-polygon.png" alt="green-roads-polygon" /></p>
+
+<h2>Concave Polygons</h2>
+
+<p>So far we have only used convex polygons as shape. Next we should deal with concave cases, where the curve turns to other direction&hellip;</p>

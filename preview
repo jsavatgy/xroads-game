@@ -1,0 +1,9 @@
+#!/bin/bash
+
+outfile="preview.html"
+
+echo "<meta charset=\"utf-8\">" >$outfile
+
+markdown README.md >>$outfile
+firefox $outfile  > /dev/null 2>&1 &
+# rm $outfile
