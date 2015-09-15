@@ -197,7 +197,7 @@ drawArc color r (Point x y) angle1 angle2 = do
 
 To get the calculations correct, we use `testPolygon` and `testDodecagon` as shape. For clarity the number `tau = 6.28318530717958647692` is used instead of `pi`.
 
-```
+```haskell
 testPolygon = [Point 200 100, Point 100 200, Point 100 300, Point 300 200]
 testDodecagon = 
   [Point (200 + radius * cos a)(200 - radius * sin a)| a <- angles]
@@ -227,7 +227,60 @@ The full code for the green roads: [green-roads.hs](code/green-roads.hs)
 
 ![green-roads-polygon](pics/green-roads-polygon.png)
 
-## Concave Polygons
+## Dark Green Points
 
-So far we have only used convex polygons as shape. Next we should deal with concave cases, where the curve turns to other direction...
+Our initial purpose was to paint a road which goes through a set of given points. Let's get back to this purpose, and define the actual points:
 
+```
+darkPoly = [Point 200 50, Point 55 180, Point 75 340, Point 345 210]
+```
+
+![dark-green-points](pics/dark-green-points.png)
+
+The simplified code looks now like: [dark-green-points.hs](code/dark-green-points.hs)
+
+## Blue Vectors
+
+To get the curves go through the points, we need to find the center point for the arc, that formes the curve. It probably is somewhere along the half of the angles between the defining points. Let's first find the angles.
+
+```haskell
+points = darkPoly
+dirTriplets = transpose [rotList r points | r <- [-1,0,1]]
+dirVecs2 = map (\[a,b,c] -> [(b,mkVector b a),(b,mkVector b c)]) dirTriplets
+dirVecs = concat dirVecs2
+dirUnits50 = map (\(s,v) -> (s, unit 50 v)) dirVecs
+```
+
+The function `transpose` from the module `Data.List` works with lists as follows:
+
+```haskell
+import Data.List
+transpose ["ABCD","abcd","1234"]
+ ⇒ ["Aa1","Bb2","Cc3","Dd4"]
+```
+
+We define the function `rotList` to rotate a list. We use this to get nicely the triplets of previous, current and next point.
+
+```haskell
+rotList n xs = take size (drop (n `mod` size) (cycle xs))
+  where size = length xs
+```
+
+Now
+
+```haskell
+rotList (-1) "ABCDE" ⇒ "EABCD"
+rotList 0 "ABCDE" ⇒ "ABCDE"
+rotList 1 "ABCDE" ⇒ "BCDEA"
+
+map (\n -> rotList n "ABCDE") [-1,0,1]
+ ⇒ ["EABCD","ABCDE","BCDEA"]
+```
+
+![blue-vectors](pics/blue-vectors.png)
+
+The full code to find the directed vectors: [blue-vectors.hs](code/blue-vectors.hs)
+
+## Dark Blue Halves
+
+Next time we'll try to find the half angle...

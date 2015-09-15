@@ -101,13 +101,13 @@ vectors = map (uncurry mkVector) segments
 
 <h2>Yellow Normals</h2>
 
-<p>Next we find out the normals for each start- and endpoint. When the points are ordered counterclockwise, we get the outside pointing normal for a vector by</p>
+<p>Next we find out the normals for each start point and end point. When the points are ordered counterclockwise, we get the outside pointing normal for a vector by</p>
 
 <pre><code>normal (Vector dx dy) = 
   Vector (-dy) dx
 </code></pre>
 
-<p>We need the magnitude of the vector, so we can draw a multitude of it&rsquo;s unit vector.</p>
+<p>We need the magnitude of the vector, so we can draw a multitude of its unit vector.</p>
 
 <pre><code>dist (Point x0 y0) (Point x1 y1) = 
   sqrt ((sqr dx) + (sqr dy))
@@ -125,7 +125,7 @@ unit r (Vector dx dy) =
     mag = magnitude (Vector dx dy)
 </code></pre>
 
-<p>Besides points and segments, we now get the startpoints, endpoints, vectors between them and the unit normals:</p>
+<p>Besides points and segments, we now get the start points, end points, vectors between them and the unit normals:</p>
 
 <pre><code>points = [Point 200 100, Point 100 300, Point 300 200]
 segments = zip points (tail (cycle points))
@@ -182,7 +182,7 @@ r2 = plateW - r1
 
 <p>To get the calculations correct, we use <code>testPolygon</code> and <code>testDodecagon</code> as shape. For clarity the number <code>tau = 6.28318530717958647692</code> is used instead of <code>pi</code>.</p>
 
-<pre><code>testPolygon = [Point 200 100, Point 100 200, Point 100 300, Point 300 200]
+<pre><code class="haskell">testPolygon = [Point 200 100, Point 100 200, Point 100 300, Point 300 200]
 testDodecagon = 
   [Point (200 + radius * cos a)(200 - radius * sin a)| a &lt;- angles]
   where
@@ -209,6 +209,55 @@ testDodecagon =
 
 <p><img src="pics/green-roads-polygon.png" alt="green-roads-polygon" /></p>
 
-<h2>Concave Polygons</h2>
+<h2>Dark Green Points</h2>
 
-<p>So far we have only used convex polygons as shape. Next we should deal with concave cases, where the curve turns to other direction&hellip;</p>
+<p>Our initial purpose was to paint a road which goes through a set of given points. Let&rsquo;s get back to this purpose, and define the actual points:</p>
+
+<pre><code>darkPoly = [Point 200 50, Point 55 180, Point 75 340, Point 345 210]
+</code></pre>
+
+<p><img src="pics/dark-green-points.png" alt="dark-green-points" /></p>
+
+<p>The simplified code looks now like: <a href="code/dark-green-points.hs">dark-green-points.hs</a></p>
+
+<h2>Blue Vectors</h2>
+
+<p>To get the curves go through the points, we need to find the center point for the arc, that formes the curve. It probably is somewhere along the half of the angles between the defining points. Let&rsquo;s first find the angles.</p>
+
+<pre><code class="haskell">points = darkPoly
+dirTriplets = transpose [rotList r points | r &lt;- [-1,0,1]]
+dirVecs2 = map (\[a,b,c] -&gt; [(b,mkVector b a),(b,mkVector b c)]) dirTriplets
+dirVecs = concat dirVecs2
+dirUnits50 = map (\(s,v) -&gt; (s, unit 50 v)) dirVecs
+</code></pre>
+
+<p>The function <code>transpose</code> from the module <code>Data.List</code> works with lists as follows:</p>
+
+<pre><code class="haskell">import Data.List
+transpose ["ABCD","abcd","1234"]
+ ⇒ ["Aa1","Bb2","Cc3","Dd4"]
+</code></pre>
+
+<p>We define the function <code>rotList</code> to rotate a list. We use this to get nicely the triplets of previous, current and next point.</p>
+
+<pre><code class="haskell">rotList n xs = take size (drop (n `mod` size) (cycle xs))
+  where size = length xs
+</code></pre>
+
+<p>Now</p>
+
+<pre><code class="haskell">rotList (-1) "ABCDE" ⇒ "EABCD"
+rotList 0 "ABCDE" ⇒ "ABCDE"
+rotList 1 "ABCDE" ⇒ "BCDEA"
+
+map (\n -&gt; rotList n "ABCDE") [-1,0,1]
+ ⇒ ["EABCD","ABCDE","BCDEA"]
+</code></pre>
+
+<p><img src="pics/blue-vectors.png" alt="blue-vectors" /></p>
+
+<p>The full code to find the directed vectors: <a href="code/blue-vectors.hs">blue-vectors.hs</a></p>
+
+<h2>Dark Blue Halves</h2>
+
+<p>Next time we&rsquo;ll try to find the half angle&hellip;</p>
