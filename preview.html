@@ -260,4 +260,17 @@ map (\n -&gt; rotList n "ABCDE") [-1,0,1]
 
 <h2>Dark Blue Halves</h2>
 
-<p>Next time we&rsquo;ll try to find the half angle&hellip;</p>
+<p>As we see in the product of <a href="code/blue-angles-text.hs">blue-angles-text.hs</a></p>
+
+<p><img src="pics/blue-angles-text.png" alt="blue-angles-text" /></p>
+
+<p>the function <code>vectorAngle</code> defined as</p>
+
+<pre><code class="haskell">vectorAngle (Vector x y) 
+  | y &gt;= 0   = acos x
+  | otherwise = -(acos x)
+</code></pre>
+
+<p>returns the angle between the vector and x-axis (coordinate origo being in left-upper corner).</p>
+
+<p>Next time we&rsquo;ll try to find the half angle between those&hellip;</p>

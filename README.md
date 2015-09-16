@@ -283,4 +283,18 @@ The full code to find the directed vectors: [blue-vectors.hs](code/blue-vectors.
 
 ## Dark Blue Halves
 
-Next time we'll try to find the half angle...
+As we see in the product of [blue-angles-text.hs](code/blue-angles-text.hs)
+
+![blue-angles-text](pics/blue-angles-text.png)
+
+the function `vectorAngle` defined as
+
+```haskell
+vectorAngle (Vector x y) 
+  | y >= 0   = acos x
+  | otherwise = -(acos x)
+```
+
+returns the angle between the vector and x-axis (coordinate origo being in left-upper corner).
+
+Next time we'll try to find the half angle between those...
