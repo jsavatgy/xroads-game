@@ -34,8 +34,8 @@ dist (Point x0 y0) (Point x1 y1) =
 magnitude (Vector dx dy) =
   dist (Point 0 0) (Point dx dy)
 
-darkPoly = [Point 200 50, Point 55 180, Point 75 340, 
-            Point 150 180, Point 345 210]
+darkPoly = [Point 170 50, Point 55 180, Point 75 340, 
+            Point 150 180, Point 345 110]
 
 unit r (Vector dx dy) = 
   Vector (r * dx / mag) (r * dy / mag)
