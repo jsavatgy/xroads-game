@@ -111,14 +111,14 @@ The full code for the orange lines: [orange-lines.hs](code/orange-lines.hs)
 
 Next we find out the normals for each start point and end point. When the points are ordered counterclockwise, we get the outside pointing normal for a vector by
 
-```
+```haskell
 normal (Vector dx dy) = 
   Vector (-dy) dx
 ```
 
 We need the magnitude of the vector, so we can draw a multitude of its unit vector.
 
-```
+```haskell
 dist (Point x0 y0) (Point x1 y1) = 
   sqrt ((sqr dx) + (sqr dy))
   where
@@ -137,7 +137,7 @@ unit r (Vector dx dy) =
 
 Besides points and segments, we now get the start points, end points, vectors between them and the unit normals:
 
-```
+```haskell
 points = [Point 200 100, Point 100 300, Point 300 200]
 segments = zip points (tail (cycle points))
 startPoints = map fst segments
@@ -149,7 +149,7 @@ units = map (unit 1.0) normals
 
 We stroke the normals in a loop
 
-```
+```haskell
 paintCanvas = do
   setSourceRGB 1 1 1
   paint
@@ -167,7 +167,7 @@ The full code for the normals: [yellow-normals.hs](code/yellow-normals.hs)
 
 The roadline is drawn using functions `drawLine` and `drawArc`. Function `drawLine` is used on straight paths and function `drawArc` on curves.
 
-```
+```haskell
 paintRoadLine r = do
   mapM_ (uncurry (drawLine green)) (zip rStart rEnd)
   mapM_ (uncurry3 (drawArc green r)) arcs2
@@ -179,7 +179,7 @@ paintRoadLine r = do
 
 We take some measurements from the Lego-plates
 
-```
+```haskell
 plateW = 100
 roadMarks = [0.286, 0.307, 0.491]
 r1 = plateW * roadMarks !! 0
@@ -188,7 +188,7 @@ r2 = plateW - r1
 
 For an arc we need its center point, radius, start angle and end angle
 
-```
+```haskell
 drawArc color r (Point x y) angle1 angle2 = do
   setColor color
   arc x y r angle1 angle2
@@ -211,7 +211,7 @@ testDodecagon =
 
 Given the vector, vectorangle can be calculated as follows:
 
-```
+```haskell
 vectorAngle (Vector x y) 
   | y >= 0   = acos x
   | otherwise = -(acos x)
@@ -283,18 +283,26 @@ The full code to find the directed vectors: [blue-vectors.hs](code/blue-vectors.
 
 ## Dark Blue Halves
 
-As we see in the product of [blue-angles-text.hs](code/blue-angles-text.hs)
-
-![blue-angles-text](pics/blue-angles-text.png)
-
-the function `vectorAngle` defined as
+The angle between two vectors can be calculatated by the function `acos`, but there is an another more useful function `atan2` for the same purpose. It gives angles inside full turn without conditioning.
 
 ```haskell
-vectorAngle (Vector x y) 
-  | y >= 0   = acos x
-  | otherwise = -(acos x)
+axisX = Vector 1.0 0.0
+
+vectorAngle (Vector x1 y1) (Vector x2 y2) =
+  atan2 (x1*y2 - y1*x2) (x1*x2 + y1*y2)
 ```
 
-returns the angle between the vector and x-axis (coordinate origo being in left-upper corner).
+Using this definition, we find the angle between vector and X-axis using the function `(vectorAngle axisX)`
 
-Next time we'll try to find the half angle between those...
+```haskell
+dirAngles = map (vectorAngle axisX) dirUnits
+```
+
+![blue-atan2](pics/blue-atan2.png)
+
+Everything seems to be upside-down because the coordinate origo situates in upper-left corner. We'll just ignore this. The angle of the fourth point gives us a negative number, because the actual angle is on the opposite side, but we can find use for this observation later.
+
+The source code for this: [blue-atan2.hs](code/blue-atan2.hs)
+
+
+We are quite close to finding the actual half angle between the vectors...

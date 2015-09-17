@@ -103,13 +103,13 @@ vectors = map (uncurry mkVector) segments
 
 <p>Next we find out the normals for each start point and end point. When the points are ordered counterclockwise, we get the outside pointing normal for a vector by</p>
 
-<pre><code>normal (Vector dx dy) = 
+<pre><code class="haskell">normal (Vector dx dy) = 
   Vector (-dy) dx
 </code></pre>
 
 <p>We need the magnitude of the vector, so we can draw a multitude of its unit vector.</p>
 
-<pre><code>dist (Point x0 y0) (Point x1 y1) = 
+<pre><code class="haskell">dist (Point x0 y0) (Point x1 y1) = 
   sqrt ((sqr dx) + (sqr dy))
   where
     sqr x = x * x
@@ -127,7 +127,7 @@ unit r (Vector dx dy) =
 
 <p>Besides points and segments, we now get the start points, end points, vectors between them and the unit normals:</p>
 
-<pre><code>points = [Point 200 100, Point 100 300, Point 300 200]
+<pre><code class="haskell">points = [Point 200 100, Point 100 300, Point 300 200]
 segments = zip points (tail (cycle points))
 startPoints = map fst segments
 endPoints = map snd segments
@@ -138,7 +138,7 @@ units = map (unit 1.0) normals
 
 <p>We stroke the normals in a loop</p>
 
-<pre><code>paintCanvas = do
+<pre><code class="haskell">paintCanvas = do
   setSourceRGB 1 1 1
   paint
   mapM_ drawMarkerAt points
@@ -155,7 +155,7 @@ units = map (unit 1.0) normals
 
 <p>The roadline is drawn using functions <code>drawLine</code> and <code>drawArc</code>. Function <code>drawLine</code> is used on straight paths and function <code>drawArc</code> on curves.</p>
 
-<pre><code>paintRoadLine r = do
+<pre><code class="haskell">paintRoadLine r = do
   mapM_ (uncurry (drawLine green)) (zip rStart rEnd)
   mapM_ (uncurry3 (drawArc green r)) arcs2
   where
@@ -166,7 +166,7 @@ units = map (unit 1.0) normals
 
 <p>We take some measurements from the Lego-plates</p>
 
-<pre><code>plateW = 100
+<pre><code class="haskell">plateW = 100
 roadMarks = [0.286, 0.307, 0.491]
 r1 = plateW * roadMarks !! 0
 r2 = plateW - r1
@@ -174,7 +174,7 @@ r2 = plateW - r1
 
 <p>For an arc we need its center point, radius, start angle and end angle</p>
 
-<pre><code>drawArc color r (Point x y) angle1 angle2 = do
+<pre><code class="haskell">drawArc color r (Point x y) angle1 angle2 = do
   setColor color
   arc x y r angle1 angle2
   stroke
@@ -195,7 +195,7 @@ testDodecagon =
 
 <p>Given the vector, vectorangle can be calculated as follows:</p>
 
-<pre><code>vectorAngle (Vector x y) 
+<pre><code class="haskell">vectorAngle (Vector x y) 
   | y &gt;= 0   = acos x
   | otherwise = -(acos x)
 </code></pre>
@@ -260,17 +260,23 @@ map (\n -&gt; rotList n "ABCDE") [-1,0,1]
 
 <h2>Dark Blue Halves</h2>
 
-<p>As we see in the product of <a href="code/blue-angles-text.hs">blue-angles-text.hs</a></p>
+<p>The angle between two vectors can be calculatated by the function <code>acos</code>, but there is an another more useful function <code>atan2</code> for the same purpose. It gives angles inside full turn without conditioning.</p>
 
-<p><img src="pics/blue-angles-text.png" alt="blue-angles-text" /></p>
+<pre><code class="haskell">axisX = Vector 1.0 0.0
 
-<p>the function <code>vectorAngle</code> defined as</p>
-
-<pre><code class="haskell">vectorAngle (Vector x y) 
-  | y &gt;= 0   = acos x
-  | otherwise = -(acos x)
+vectorAngle (Vector x1 y1) (Vector x2 y2) =
+  atan2 (x1*y2 - y1*x2) (x1*x2 + y1*y2)
 </code></pre>
 
-<p>returns the angle between the vector and x-axis (coordinate origo being in left-upper corner).</p>
+<p>Using this definition, we find the angle between vector and X-axis using the function <code>(vectorAngle axisX)</code></p>
 
-<p>Next time we&rsquo;ll try to find the half angle between those&hellip;</p>
+<pre><code class="haskell">dirAngles = map (vectorAngle axisX) dirUnits
+</code></pre>
+
+<p><img src="pics/blue-atan2.png" alt="blue-atan2" /></p>
+
+<p>Everything seems to be upside-down because the coordinate origo situates in upper-left corner. We&rsquo;ll just ignore this. The angle of the fourth point gives us a negative number, because the actual angle is on the opposite side, but we can find use for this observation later.</p>
+
+<p>The source code for this: <a href="code/blue-atan2.hs">blue-atan2.hs</a></p>
+
+<p>We are quite close to finding the actual half angle between the vectors&hellip;</p>
