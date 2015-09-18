@@ -10,14 +10,14 @@ So let's paint some roads using the Haskell programming language.
 
 A point is represented by the data type `Point`. We create a list of some example points.
 
-```
+```haskell
 data Point = Point Double Double
 points = [Point 200 100, Point 100 300, Point 300 200]
 ```
 
 We fill the canvas by white and draw each point by the functions `drawMarkerAt` and `drawOneMarker`.
 
-```
+```haskell
 drawOneMarker bw (r,g,b) = do
   rectangle (-0.5*bw) (-0.5*bw) bw bw
   setSourceRGBA r g b 0.8
@@ -37,7 +37,7 @@ paintCanvas = do
 
 The result is an image surface of size 400x400px, which we write to a file.
 
-```
+```haskell
 createPng fileName = do
   let w = 400
       h = 400
@@ -55,7 +55,7 @@ The full code for the red dots is here: [red-dots.hs](code/red-dots.hs)
 
 To connect the points, we define the data type for vector. The colors are represented as RGB or RGBA color.
 
-```
+```haskell
 data Vector = Vector Double Double
 data RGBA = RGB  Double Double Double
           | RGBA Double Double Double Double
@@ -63,7 +63,7 @@ data RGBA = RGB  Double Double Double
 
 The colors now become
 
-```
+```haskell
 white  = RGBA 1.00 1.00 1.00 1.00
 red    = RGB  0.88 0.29 0.22
 orange = RGB  0.98 0.63 0.15
@@ -74,7 +74,7 @@ darkGreen = RGB 0.00 0.66 0.52
 
 We get the line segments and corresponding vectors by
 
-```
+```haskell
 mkVector (Point x0 y0) (Point x1 y1) =
   Vector (x1 - x0) (y1 - y0)
 
@@ -85,7 +85,7 @@ vectors = map (uncurry mkVector) segments
 
 The function `uncurry` from Prelude is used to unzip the tuple made by `zip`. To draw one vector, we use
 
-```
+```haskell
 drawVector (Point x y) (Vector dx dy) = do
   setColor orange
   moveTo x y
@@ -95,7 +95,7 @@ drawVector (Point x y) (Vector dx dy) = do
 
 Again, we clear the canvas and paint the markers and vectors connecting them.
 
-```
+```haskell
 paintCanvas = do
   setSourceRGB 1 1 1
   paint
@@ -219,7 +219,7 @@ vectorAngle (Vector x y)
 
 This is used to get the start angle and end angle of the arc. The function `drawArc` takes the center point, start angle and end angle as parameters. We have zipped them to a triple by the function `zip3` so we need the function `uncurry3` to unzip the parameters.
 
-```
+```haskell
 uncurry3 f (a,b,c) = f a b c
 ```
 
@@ -231,7 +231,7 @@ The full code for the green roads: [green-roads.hs](code/green-roads.hs)
 
 Our initial purpose was to paint a road which goes through a set of given points. Let's get back to this purpose, and define the actual points:
 
-```
+```haskell
 darkPoly = [Point 200 50, Point 55 180, Point 75 340, Point 345 210]
 ```
 
@@ -304,5 +304,29 @@ Everything seems to be upside-down because the coordinate origo situates in uppe
 
 The source code for this: [blue-atan2.hs](code/blue-atan2.hs)
 
+## Back to Road
 
-We are quite close to finding the actual half angle between the vectors...
+The half angles become thus the first of `dirAngles` added to the half of the `dirBetween`
+
+```haskell
+dirHalves = map 
+  (\(a,b) -> b + 0.5*a) 
+  (zip dirBetween (pairwise (\a b -> a) dirAngles))
+```
+
+We go half of the plate width to the direction of half angle, and convert the vector arrow to a point. 
+
+```haskell
+dirHVecs = map (vectorFromAngle (0.5*plateW)) dirHalves
+points = map (uncurry toPoint) (zip darkPoly dirHVecs)
+```
+
+Now we have recalculated the original Red Points and can bring the road back.
+
+![back-to-road](pics/back-to-road.png)
+
+We observe how our road became smarter than us. This is of course wrong...
+
+The code: [back-to-road](code/back-to-road.hs)
+
+

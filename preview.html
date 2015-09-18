@@ -11,13 +11,13 @@
 
 <p>A point is represented by the data type <code>Point</code>. We create a list of some example points.</p>
 
-<pre><code>data Point = Point Double Double
+<pre><code class="haskell">data Point = Point Double Double
 points = [Point 200 100, Point 100 300, Point 300 200]
 </code></pre>
 
 <p>We fill the canvas by white and draw each point by the functions <code>drawMarkerAt</code> and <code>drawOneMarker</code>.</p>
 
-<pre><code>drawOneMarker bw (r,g,b) = do
+<pre><code class="haskell">drawOneMarker bw (r,g,b) = do
   rectangle (-0.5*bw) (-0.5*bw) bw bw
   setSourceRGBA r g b 0.8
   fill
@@ -36,7 +36,7 @@ paintCanvas = do
 
 <p>The result is an image surface of size 400x400px, which we write to a file.</p>
 
-<pre><code>createPng fileName = do
+<pre><code class="haskell">createPng fileName = do
   let w = 400
       h = 400
   img &lt;- createImageSurface FormatARGB32 w h
@@ -52,14 +52,14 @@ paintCanvas = do
 
 <p>To connect the points, we define the data type for vector. The colors are represented as RGB or RGBA color.</p>
 
-<pre><code>data Vector = Vector Double Double
+<pre><code class="haskell">data Vector = Vector Double Double
 data RGBA = RGB  Double Double Double
           | RGBA Double Double Double Double
 </code></pre>
 
 <p>The colors now become</p>
 
-<pre><code>white  = RGBA 1.00 1.00 1.00 1.00
+<pre><code class="haskell">white  = RGBA 1.00 1.00 1.00 1.00
 red    = RGB  0.88 0.29 0.22
 orange = RGB  0.98 0.63 0.15
 yellow = RGB  0.97 0.85 0.39
@@ -69,7 +69,7 @@ darkGreen = RGB 0.00 0.66 0.52
 
 <p>We get the line segments and corresponding vectors by</p>
 
-<pre><code>mkVector (Point x0 y0) (Point x1 y1) =
+<pre><code class="haskell">mkVector (Point x0 y0) (Point x1 y1) =
   Vector (x1 - x0) (y1 - y0)
 
 points = [Point 200 100, Point 100 300, Point 300 200]
@@ -79,7 +79,7 @@ vectors = map (uncurry mkVector) segments
 
 <p>The function <code>uncurry</code> from Prelude is used to unzip the tuple made by <code>zip</code>. To draw one vector, we use</p>
 
-<pre><code>drawVector (Point x y) (Vector dx dy) = do
+<pre><code class="haskell">drawVector (Point x y) (Vector dx dy) = do
   setColor orange
   moveTo x y
   relLineTo dx dy
@@ -88,7 +88,7 @@ vectors = map (uncurry mkVector) segments
 
 <p>Again, we clear the canvas and paint the markers and vectors connecting them.</p>
 
-<pre><code>paintCanvas = do
+<pre><code class="haskell">paintCanvas = do
   setSourceRGB 1 1 1
   paint
   mapM_ drawMarkerAt points
@@ -202,7 +202,7 @@ testDodecagon =
 
 <p>This is used to get the start angle and end angle of the arc. The function <code>drawArc</code> takes the center point, start angle and end angle as parameters. We have zipped them to a triple by the function <code>zip3</code> so we need the function <code>uncurry3</code> to unzip the parameters.</p>
 
-<pre><code>uncurry3 f (a,b,c) = f a b c
+<pre><code class="haskell">uncurry3 f (a,b,c) = f a b c
 </code></pre>
 
 <p>The full code for the green roads: <a href="code/green-roads.hs">green-roads.hs</a></p>
@@ -213,7 +213,7 @@ testDodecagon =
 
 <p>Our initial purpose was to paint a road which goes through a set of given points. Let&rsquo;s get back to this purpose, and define the actual points:</p>
 
-<pre><code>darkPoly = [Point 200 50, Point 55 180, Point 75 340, Point 345 210]
+<pre><code class="haskell">darkPoly = [Point 200 50, Point 55 180, Point 75 340, Point 345 210]
 </code></pre>
 
 <p><img src="pics/dark-green-points.png" alt="dark-green-points" /></p>
@@ -279,4 +279,25 @@ vectorAngle (Vector x1 y1) (Vector x2 y2) =
 
 <p>The source code for this: <a href="code/blue-atan2.hs">blue-atan2.hs</a></p>
 
-<p>We are quite close to finding the actual half angle between the vectors&hellip;</p>
+<h2>Back to Road</h2>
+
+<p>The half angles become thus the first of <code>dirAngles</code> added to the half of the <code>dirBetween</code></p>
+
+<pre><code class="haskell">dirHalves = map 
+  (\(a,b) -&gt; b + 0.5*a) 
+  (zip dirBetween (pairwise (\a b -&gt; a) dirAngles))
+</code></pre>
+
+<p>We go half of the plate width to the direction of half angle, and convert the vector arrow to a point.</p>
+
+<pre><code class="haskell">dirHVecs = map (vectorFromAngle (0.5*plateW)) dirHalves
+points = map (uncurry toPoint) (zip darkPoly dirHVecs)
+</code></pre>
+
+<p>Now we have recalculated the original Red Points and can bring the road back.</p>
+
+<p><img src="pics/back-to-road.png" alt="back-to-road" /></p>
+
+<p>We observe how our road became smarter than us. This is of course wrong&hellip;</p>
+
+<p>The code <a href="code/back-to-road.hs">back-to-road</a></p>
