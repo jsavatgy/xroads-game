@@ -1,6 +1,5 @@
 import Graphics.Rendering.Cairo
 import Data.List (transpose)
-import Text.Printf
 
 data Point  = Point Double Double
   deriving Show
@@ -80,7 +79,6 @@ arcs1 = zip3 endPoints units (tail (cycle units))
 vecAngles = map (vectorAngle axisX) units
 arcs2 = zip3 (tail (cycle startPoints)) (tail (cycle vecAngles)) vecAngles
 
-
 white  = RGBA 1.00 1.00 1.00 1.00
 black  = RGB  0.00 0.00 0.00
 red    = RGB  0.88 0.29 0.22
@@ -97,12 +95,6 @@ axisX = Vector 1.0 0.0
 
 vectorAngle (Vector x1 y1) (Vector x2 y2) =
   atan2 (x1*y2 - y1*x2) (x1*x2 + y1*y2)
-
-vectorAngleCCW (Vector x1 y1) (Vector x2 y2) 
-  | a >= 0    = a 
-  | otherwise = tau + a
-    where 
-      a = vectorAngle (Vector x1 y1) (Vector x2 y2)
 
 setColor (RGBA r g b a) = setSourceRGBA r g b a
 setColor (RGB r g b) = setColor (RGBA r g b 0.8)
@@ -132,16 +124,6 @@ drawVector color (Point x y) (Vector dx dy) = do
   moveTo x y
   relLineTo dx dy
   stroke
-
-drawTextSth (((Point x y), (Vector dx dy)), angle) = do
-  moveTo (x+dx-10) (y+dy+5)
-  setColor black
-  showText (printf "%.2f" angle)
-
-drawTextXYa ((Point x y), angle) = do
-  moveTo (x-10) (y+15)
-  setColor black
-  showText (printf "%.2f" angle)
 
 drawPair color (s,v) = do
   drawVector color s v
