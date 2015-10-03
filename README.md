@@ -329,4 +329,84 @@ We observe how our road became smarter than us. This is of course wrong...
 
 The code: [back-to-road](code/back-to-road.hs)
 
+## Distinguish Convex and Concave
+
+Curves on road are either convex or concave. We represent this by data type `Curving`:
+
+```haskell
+data Curving = Convex | Concave
+```
+
+We know from earlier, that curve is convex, when (following the path counterclockwise) it's angle remains on the upper half of unit circle. There the function `vectorAngle` returns a positive number:
+
+```haskell
+curved angle 
+ | angle >= 0  = Convex
+ | otherwise   = Concave
+```
+
+Having made the definitions
+
+```haskell
+dirBetween = pairwise vectorAngle dirUnits
+dirCurved  = map curved dirBetween
+```
+
+we get
+
+```haskell
+dirBetween = 
+[1.707862501105084,0.45093642923738,-2.158798930342464,
+-2.158798930342464,0.45093642923738, 1.707862501105084]
+dirCurved = [Convex,Convex,Concave,Concave,Convex,Convex]
+```
+
+The orientation of straight road segment can be concluded from the convexity of its start and end point. The orientation of arc can be concluded from the convexity of previous, current and next point. Because the list of convexity becomes quite long, we abbreviate convex turn as `x` and concave turn as `o`:
+
+```haskell
+ox Convex  = 'x'
+ox Concave = 'o'
+```
+
+With the given six points, we thus get
+
+```haskell
+dirOx = map ox dirCurved
+ ⇒ "xxooxx"
+```
+
+From this, ge get the cycled pairs and cycled triples:
+
+```haskell
+dirCycledPairs = cycledPairs dirOx
+dirCycledTriples = cycledTriples dirOx
+
+cycledTriples xs = 
+  zipWith3 (\a b c -> a:b:[c]) (rotList (-1) xs) xs (rotList 1 xs)
+cycledPairs xs = zipWith (\a b -> a:[b]) xs (rotList 1 xs)
+pairwise f (x:y:zs) = f x y : pairwise f zs
+pairwise f _ = []
+rotList n xs = take size (drop (n `mod` size) (cycle xs))
+  where size = length xs
+```
+
+We get
+
+```haskell
+dirOx = "xxooxx"
+dirCycledPairs = ["xx","xo","oo","ox","xx","xx"]
+dirCycledTriples = ["xxx","xxo","xoo","oox","oxx","xxx"]
+```
+
+Regular convex lines are now marked by `"xx"` and arcs by `xxx`. We paint them and leave the rest for later:
+
+```
+drawLineTested c p0 p1 "xx" = drawLine c p0 p1
+drawLineTested c p0 p1 _ = return ()
+
+drawArcTested "xxx" r arcs = uncurry3 (drawArc orange r) arcs
+drawArcTested _ _ _ = return ()
+```
+
+![green-orange](pics/green-orange.png)
 

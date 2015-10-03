@@ -300,4 +300,76 @@ points = map (uncurry toPoint) (zip darkPoly dirHVecs)
 
 <p>We observe how our road became smarter than us. This is of course wrong&hellip;</p>
 
-<p>The code <a href="code/back-to-road.hs">back-to-road</a></p>
+<p>The code: <a href="code/back-to-road.hs">back-to-road</a></p>
+
+<h2>Distinguish Convex and Concave</h2>
+
+<p>Curves on road are either convex or concave. We represent this by data type <code>Curving</code>:</p>
+
+<pre><code class="haskell">data Curving = Convex | Concave
+</code></pre>
+
+<p>We know from earlier, that curve is convex, when (following the path counterclockwise) it&rsquo;s angle remains on the upper half of unit circle. There the function <code>vectorAngle</code> returns positive result:</p>
+
+<pre><code class="haskell">curved angle 
+ | angle &gt;= 0  = Convex
+ | otherwise   = Concave
+</code></pre>
+
+<p>Having made the definitions</p>
+
+<pre><code class="haskell">dirBetween = pairwise vectorAngle dirUnits
+dirCurved  = map curved dirBetween
+</code></pre>
+
+<p>we get</p>
+
+<pre><code class="haskell">dirBetween = 
+[1.707862501105084,0.45093642923738,-2.158798930342464,
+-2.158798930342464,0.45093642923738, 1.707862501105084]
+dirCurved = [Convex,Convex,Concave,Concave,Convex,Convex]
+</code></pre>
+
+<p>The orientation of straight road segment can be concluded from the convexity of its start and end point. The orientation of arc can be concluded from the convexity of previous, current and next point. Because the list of convexity would become quite long, we abreviate convex angle as <code>x</code> and concave angle as <code>o</code>:</p>
+
+<pre><code class="haskell">ox Convex  = 'x'
+ox Concave = 'o'
+</code></pre>
+
+<p>With the given six points, we thus get</p>
+
+<pre><code class="haskell">dirOx = map ox dirCurved
+⇒ dirOx = "xxooxx"
+</code></pre>
+
+<p>From this, ge get the cycled pairs and cycled triples:</p>
+
+<pre><code class="haskell">dirCycledPairs = cycledPairs dirOx
+dirCycledTriples = cycledTriples dirOx
+
+cycledTriples xs = 
+  zipWith3 (\a b c -&gt; a:b:[c]) (rotList (-1) xs) xs (rotList 1 xs)
+cycledPairs xs = zipWith (\a b -&gt; a:[b]) xs (rotList 1 xs)
+pairwise f (x:y:zs) = f x y : pairwise f zs
+pairwise f _ = []
+rotList n xs = take size (drop (n `mod` size) (cycle xs))
+  where size = length xs
+</code></pre>
+
+<p>We get</p>
+
+<pre><code class="haskell">dirOx = "xxooxx"
+dirCycledPairs = ["xx","xo","oo","ox","xx","xx"]
+dirCycledTriples = ["xxx","xxo","xoo","oox","oxx","xxx"]
+</code></pre>
+
+<p>Regular convex lines are now marked by <code>"xx"</code> and arcs by <code>xxx</code>. We paint them and leave the other cases for later:</p>
+
+<pre><code>drawLineTested c p0 p1 "xx" = drawLine c p0 p1
+drawLineTested c p0 p1 _ = return ()
+
+drawArcTested "xxx" r arcs = uncurry3 (drawArc orange r) arcs
+drawArcTested _ _ _ = return ()
+</code></pre>
+
+<p><img src="pics/green-orange.png" alt="green-orange" /></p>
