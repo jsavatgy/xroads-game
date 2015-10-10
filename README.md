@@ -398,15 +398,82 @@ dirCycledPairs = ["xx","xo","oo","ox","xx","xx"]
 dirCycledTriples = ["xxx","xxo","xoo","oox","oxx","xxx"]
 ```
 
-Regular convex lines are now marked by `"xx"` and arcs by `xxx`. We paint them and leave the rest for later:
+We use the triplets as parameters when calculating the new normals. The incoming normal gets all the needed information of convexity from the first two letters of a triplet and the outgoing from the last two. For this we use the functions `init` and `tail`.
 
-```
-drawLineTested c p0 p1 "xx" = drawLine c p0 p1
-drawLineTested c p0 p1 _ = return ()
-
-drawArcTested "xxx" r arcs = uncurry3 (drawArc orange r) arcs
-drawArcTested _ _ _ = return ()
+```haskell
+init "xox" ⇒ "xo"
+tail "xox" ⇒ "ox"
 ```
 
-![green-orange](pics/green-orange.png)
+## New normals
+
+We use the convexity, coordinates and some old normals to calculate the new normals, which are a bit more correct than the old ones.
+
+```haskell
+calcVecs curves points units =
+  map (uncurry3 calcVec) z
+  where
+  z = zip3 
+    (cycledTriples (map ox curves))
+    (cycledTriples points)
+    (cycledTriples vecAngles)
+```
+
+Each point has two normals, the incoming `prevNew` and the outgoing `nextNew`. We create them as a pair `[prevNew,nextNew]`. In every case the start point of the vector is the original point `thisPt`. In convex case `"xx"` the normal goes to the direction of already calculated normal, having the angle `prevAg`. The same is true for concave case `"oo"`, but the normal goes to opposite direction.
+
+```haskell
+calcVec crv pts ags =
+  [prevNew,nextNew] 
+  where
+    prevNew = case prevOx of
+      "xx" -> Vec thisPt prevAg
+      "oo" -> Vec thisPt (opposite prevAg)
+      "xo" -> Vec thisPt (opposite (angleRS prevPt thisPt (+)))
+      "ox" -> Vec thisPt (opposite (angleRS prevPt thisPt (-)))
+      _    -> None
+    nextNew = case nextOx of
+      "xx" -> Vec thisPt thisAg
+      "oo" -> Vec thisPt (opposite thisAg)
+      "xo" -> Vec thisPt (angleRS thisPt nextPt (+))
+      "ox" -> Vec thisPt (angleRS thisPt nextPt (-))
+      _    -> None
+    [prevOx,nextOx] = [init crv, tail crv]
+    [prevPt,thisPt,nextPt] = pts
+    [prevAg,thisAg,nextAg] = ags
+
+opposite angle = (angle + 0.5*tau) `mod'` tau
+```
+
+When the segment has odd convexity, we need to use some trigonometry. This is done in function `angleRS`.
+
+```haskell
+angleRS p0 p1 op = 
+  (beta `op` alpha) `mod'` tau
+  where
+    r = dist p0 p1
+    alpha = acos (plateW / r)
+    beta = vectorAngle axisX (mkVector p0 p1) 
+```
+
+In each case we draw the vectors with the function `drawVec`, which we define as
+
+```haskell
+drawVec (Vec pt ag) =
+  drawVector yellow pt (vectorFromAngle plateW ag)
+drawVec None = return ()
+
+drawVecs xs = mapM_ drawVec xs
+```
+
+![io-vecs](pics/io-vecs.png)
+
+The data type `Vec` represents a vector with start point and a direction. We give us a liberty to define non-existing vectors using the constructor `None`.
+
+```haskell
+type Angle = Double
+data Vec = Vec Point Angle | None
+```
+
+The code for this: [io-vecs.hs](code/io-vecs.hs)
+
 
