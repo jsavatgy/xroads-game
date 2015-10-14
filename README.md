@@ -476,4 +476,63 @@ data Vec = Vec Point Angle | None
 
 The code for this: [io-vecs.hs](code/io-vecs.hs)
 
+## Painting the segments
+
+Where the roadline crosses the normal, is desided based on the convexity of point. The `ratio` of `0.00` situates at the start point of the normal and the `ratio` of `1.00` at the head of the normal with length `PlateW`.
+
+```haskell
+alongAngle ratio angle curved =
+  case curved of
+    'x' -> vectorFromAngle (ratio*plateW) angle
+    'o' -> vectorFromAngle ((1.00-ratio)*plateW) angle
+```
+
+Each segment is either a `Curve` or a `Straight`.
+
+```haskell
+type Curv = Char
+data Segment = Straight Point Angle Curv Point Angle Curv
+             | Curve Point Angle Angle Curv
+```
+
+We draw the segments accordingly in one of the following functions:
+
+```haskell
+drawSeg ratio (Curve p0 a0 a1 curved)
+drawSeg ratio (Straight p0 a0 c0 p1 a1 c1)
+```
+
+A convex arc is drawn by the function `drawArcNegative` and a concave arc by the function `drawArc`.
+
+```haskell
+drawSeg ratio (Curve p0 a0 a1 curved) =
+  case curved of
+    'x' -> drawArcNegative green (ratio*plateW) p0 a0 a1
+    'o' -> drawArc green ((1.00-ratio)*plateW) p0 a0 a1
+```
+
+A straight segment is drawn by the function `drawVector`, and we get its start and end points by function `alongAngle` defined earlier.
+
+```haskell
+drawSeg ratio (Straight p0 a0 c0 p1 a1 c1) = 
+  drawVector green point0 (mkVector point0 point1)
+  where
+    point0 = toPoint p0 (alongAngle ratio a0 c0)
+    point1 = toPoint p1 (alongAngle ratio a1 c1)
+```
+
+We draw a solid line at the ratios of `0.30` and `0.70` and the dashed line in middle at `0.50`. The dashed line may still need refinement.
+
+```haskell
+drawSeg1 x = do
+  setDash [] 0
+  mapM_ (\r -> drawSeg r x) [0.30,0.70]
+  setDash [7,2] 0
+  drawSeg 0.50 x
+drawSegs xs = mapM_ drawSeg1 xs
+```
+
+![io-segs](pics/io-segs.png)
+
+The code: [io-segs.hs](code/io-segs.hs)
 
